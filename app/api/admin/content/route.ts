@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { getPublicContent, savePublicContent } from "@/lib/cms";
 import type { PublicContent } from "@/lib/site-types";
@@ -20,6 +21,7 @@ export async function PUT(request: Request) {
   try {
     const body = (await request.json()) as PublicContent;
     const content = await savePublicContent(body);
+    revalidatePath("/", "layout");
     return NextResponse.json({ content });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save these changes.";

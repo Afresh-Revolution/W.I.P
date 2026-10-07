@@ -117,6 +117,7 @@ export type Submission = {
   data: Record<string, string>;
   paymentScreenshot?: string;
   paymentConfirmed?: boolean;
+  paidAmount?: number;
 };
 
 export type Subscriber = {

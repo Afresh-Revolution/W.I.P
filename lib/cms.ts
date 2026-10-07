@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { gallery, heroSlides, images, lgas } from "./data";
 import { originalCopy } from "./copy";
-import { defaultPlans } from "./plans";
+import { defaultPlans, planAmount } from "./plans";
 import type { BankDetails, GalleryExtra, HeroCopy, LgaEntry, MailSend, MembershipPlan, PartnerEntry, PublicContent, PublicHero, SiteImages, SiteText, Submission, SubmissionType, Subscriber } from "./site-types";
 import {
   databaseConfigured,
@@ -267,7 +267,7 @@ export async function savePublicContent(input: PublicContent) {
   const stored = toStored(input);
   if (databaseConfigured()) await dbSaveContent(stored);
   else await writeDoc("content", stored);
-  return presentContent(stored);
+  return getPublicContent();
 }
 
 function cleanData(input: unknown) {
@@ -301,17 +301,31 @@ export async function addSubmission(type: string, data: unknown, paymentScreensh
 }
 
 export async function listSubmissions() {
-  if (databaseConfigured()) return dbListSubmissions();
-  const stored = await readDoc<{ submissions: Submission[] }>("submissions");
-  return stored?.submissions || [];
+  const items = databaseConfigured() ? await dbListSubmissions() : (await readDoc<{ submissions: Submission[] }>("submissions"))?.submissions || [];
+  return freezePaidAmounts(items);
 }
 
-export async function patchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string; paymentConfirmed?: boolean }) {
+async function freezePaidAmounts(items: Submission[]) {
+  const missing = items.filter((item) => item.type === "membership" && item.paymentConfirmed && item.paidAmount == null);
+  if (!missing.length) return items;
+  const plans = (await getPublicContent()).plans;
+  const next = [...items];
+  for (const item of missing) {
+    const price = item.data.price || plans.find((plan) => plan.name === item.data.tier)?.price || "";
+    const updated = await patchSubmission(item.id, { paidAmount: planAmount(price) });
+    const index = next.findIndex((entry) => entry.id === item.id);
+    if (index >= 0) next[index] = updated;
+  }
+  return next;
+}
+
+export async function patchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string; paymentConfirmed?: boolean; paidAmount?: number }) {
   if (databaseConfigured()) {
     return dbPatchSubmission(id, {
       status: patch.status,
       paymentScreenshot: patch.paymentScreenshot !== undefined ? safeUrl(patch.paymentScreenshot) || undefined : undefined,
-      paymentConfirmed: patch.paymentConfirmed
+      paymentConfirmed: patch.paymentConfirmed,
+      paidAmount: patch.paidAmount
     });
   }
   let updated: Submission | null = null;
@@ -322,7 +336,8 @@ export async function patchSubmission(id: string, patch: { status?: Submission["
         ...item,
         status: patch.status === "reviewed" || patch.status === "new" ? patch.status : item.status,
         paymentScreenshot: patch.paymentScreenshot !== undefined ? safeUrl(patch.paymentScreenshot) || undefined : item.paymentScreenshot,
-        paymentConfirmed: patch.paymentConfirmed ?? item.paymentConfirmed
+        paymentConfirmed: patch.paymentConfirmed ?? item.paymentConfirmed,
+        paidAmount: item.paidAmount != null ? item.paidAmount : patch.paidAmount ?? item.paidAmount
       };
       return updated;
     })

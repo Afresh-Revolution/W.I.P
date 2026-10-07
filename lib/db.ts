@@ -169,7 +169,7 @@ export async function dbSaveContent(stored: StoredContent) {
   });
 }
 
-function submissionFromRow(row: { id: string; type: Submission["type"]; status: Submission["status"]; data: Record<string, string>; payment_screenshot: string | null; payment_confirmed?: boolean | null; created_at: Date | string }): Submission {
+function submissionFromRow(row: { id: string; type: Submission["type"]; status: Submission["status"]; data: Record<string, string>; payment_screenshot: string | null; payment_confirmed?: boolean | null; paid_amount?: number | null; created_at: Date | string }): Submission {
   return {
     id: row.id,
     type: row.type,
@@ -177,6 +177,7 @@ function submissionFromRow(row: { id: string; type: Submission["type"]; status: 
     data: asObject(row.data),
     paymentScreenshot: row.payment_screenshot || undefined,
     paymentConfirmed: Boolean(row.payment_confirmed),
+    paidAmount: row.paid_amount == null ? undefined : Number(row.paid_amount),
     createdAt: new Date(row.created_at).toISOString()
   };
 }
@@ -214,12 +215,13 @@ export async function dbListSubmissions() {
     data: Record<string, string>;
     payment_screenshot: string | null;
     payment_confirmed: boolean | null;
+    paid_amount: number | null;
     created_at: Date;
-  }>("select id, type, status, data, payment_screenshot, payment_confirmed, created_at from submissions order by created_at desc limit 2000");
+  }>("select id, type, status, data, payment_screenshot, payment_confirmed, paid_amount, created_at from submissions order by created_at desc limit 2000");
   return result.rows.map(submissionFromRow);
 }
 
-export async function dbPatchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string; paymentConfirmed?: boolean }) {
+export async function dbPatchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string; paymentConfirmed?: boolean; paidAmount?: number }) {
   await ensureSchema();
   const current = await getPool().query("select id from submissions where id = $1", [id]);
   if (!current.rowCount) throw new Error("Submission not found.");
@@ -230,15 +232,17 @@ export async function dbPatchSubmission(id: string, patch: { status?: Submission
     data: Record<string, string>;
     payment_screenshot: string | null;
     payment_confirmed: boolean | null;
+    paid_amount: number | null;
     created_at: Date;
   }>(
     `update submissions
      set status = coalesce($2, status),
          payment_screenshot = case when $3 then $4 else payment_screenshot end,
-         payment_confirmed = coalesce($5, payment_confirmed)
+         payment_confirmed = coalesce($5, payment_confirmed),
+         paid_amount = case when paid_amount is not null then paid_amount else coalesce($6, paid_amount) end
      where id = $1
-     returning id, type, status, data, payment_screenshot, payment_confirmed, created_at`,
-    [id, patch.status || null, patch.paymentScreenshot !== undefined, patch.paymentScreenshot || null, patch.paymentConfirmed ?? null]
+     returning id, type, status, data, payment_screenshot, payment_confirmed, paid_amount, created_at`,
+    [id, patch.status || null, patch.paymentScreenshot !== undefined, patch.paymentScreenshot || null, patch.paymentConfirmed ?? null, patch.paidAmount ?? null]
   );
   return submissionFromRow(result.rows[0]);
 }

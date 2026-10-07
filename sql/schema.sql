@@ -56,6 +56,7 @@ create index if not exists submissions_created_at_idx on submissions (created_at
 create index if not exists submissions_type_idx on submissions (type);
 
 alter table submissions add column if not exists payment_confirmed boolean not null default false;
+alter table submissions add column if not exists paid_amount integer;
 
 create table if not exists subscribers (
   id uuid primary key,

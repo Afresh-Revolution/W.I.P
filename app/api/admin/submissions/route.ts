@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { deleteSubmission, getPublicContent, listSubmissions, patchSubmission } from "@/lib/cms";
-import { tierRequiresPayment } from "@/lib/plans";
+import { planAmount, tierRequiresPayment } from "@/lib/plans";
 import { personEmail, sendPaymentConfirmation } from "@/lib/mail";
 import type { Submission } from "@/lib/site-types";
 
@@ -28,7 +28,8 @@ export async function PATCH(request: Request) {
       }
       if (!personEmail(current.data)) return NextResponse.json({ error: "This registration has no email address." }, { status: 400 });
       if (current.paymentConfirmed) return NextResponse.json({ submission: current, emailed: true });
-      const submission = await patchSubmission(body.id, { paymentConfirmed: true });
+      const price = current.data.price || plans.find((plan) => plan.name === current.data.tier)?.price || "";
+      const submission = await patchSubmission(body.id, { paymentConfirmed: true, paidAmount: current.paidAmount ?? planAmount(price) });
       try {
         const emailed = await sendPaymentConfirmation(submission);
         return NextResponse.json({ submission, emailed });

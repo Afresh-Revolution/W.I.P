@@ -31,11 +31,8 @@ export function tierRequiresPayment(tier: string, plans: MembershipPlan[]) {
   return Boolean(tier) && tier !== "Community";
 }
 
-export function membershipRevenue(submissions: Submission[], plans: MembershipPlan[]) {
+export function membershipRevenue(submissions: Submission[]) {
   const confirmed = submissions.filter((item) => item.type === "membership" && item.paymentConfirmed);
-  const total = confirmed.reduce((sum, item) => {
-    const price = item.data.price || plans.find((plan) => plan.name === item.data.tier)?.price || "";
-    return sum + planAmount(price);
-  }, 0);
+  const total = confirmed.reduce((sum, item) => sum + (typeof item.paidAmount === "number" ? item.paidAmount : planAmount(item.data.price || "")), 0);
   return { total, count: confirmed.length };
 }

@@ -572,14 +572,14 @@ function moveItem<T>(list: T[], index: number, direction: -1 | 1) {
 }
 
 function PlanEditor({ plans, submissions, onChange }: { plans: MembershipPlan[]; submissions: Submission[]; onChange: (plans: MembershipPlan[]) => void }) {
-  const revenue = membershipRevenue(submissions, plans);
+  const revenue = membershipRevenue(submissions);
   return (
     <section className="admin-stack">
       <article className="revenue-card">
         <span>Confirmed revenue</span>
         <strong>{formatNaira(revenue.total)}</strong>
         <p>
-          {revenue.count} confirmed {revenue.count === 1 ? "membership" : "memberships"}. This total updates when a payment is confirmed.
+          {revenue.count} confirmed {revenue.count === 1 ? "membership" : "memberships"}. Adding or editing a plan does not change this total.
         </p>
       </article>
       <p className="admin-help">These plans appear on the homepage, the membership page, and the registration form. Mark one as recommended. Use Free, or leave the price empty, when no transfer is required.</p>

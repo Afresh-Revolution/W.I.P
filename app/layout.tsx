@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SiteContentProvider } from "@/components/SiteContent";
@@ -42,8 +43,10 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await headers();
   const content = await getPublicContent();
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable}`}>
