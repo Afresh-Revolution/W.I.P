@@ -1,0 +1,81 @@
+.site-header {
+  z-index: 50;
+  border-bottom: 1px solid var(--border);
+  background: #faf8f3f5;
+  position: sticky;
+  top: 0;
+}
+
+.nav-wrap {
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  width: min(1360px, 100% - 48px);
+  height: 82px;
+  margin: auto;
+  display: flex;
+}
+
+.brand {
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 0;
+  display: flex;
+}
+
+.brand-mark {
+  background: var(--wine);
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  font: 700 1.55rem var(--serif);
+  border-radius: 50% 50% 50% 6px;
+  place-items: center;
+  display: grid;
+}
+
+.brand b {
+  letter-spacing: .08em;
+  font-size: 1.05rem;
+}
+
+.brand small {
+  color: var(--muted);
+  letter-spacing: .02em;
+  font-size: .56rem;
+  line-height: 1.25;
+  display: block;
+}
+
+.desktop-nav {
+  align-items: center;
+  gap: 2px;
+  display: flex;
+}
+
+.desktop-nav :is(button, a) {
+  color: #45423f;
+  background: none;
+  border: 0;
+  padding: 10px 9px;
+  font-size: .76rem;
+  font-weight: 600;
+}
+
+.desktop-nav :is(button, a):hover {
+  color: var(--wine);
+}
+
+.nav-actions {
+  align-items: center;
+  gap: 4px;
+  display: flex;
+}
+
+.mobile-only, .mobile-menu, .mobile-sticky {
+  display: none;
+}

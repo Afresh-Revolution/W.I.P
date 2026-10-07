@@ -1,0 +1,37 @@
+a.btn,
+.desktop-nav a,
+.mobile-menu nav a,
+.footer-main > div > a,
+.footer-bottom a,
+.brand,
+.announcement a,
+.lga-list a,
+.search-inner a,
+.article-back,
+.back-site,
+.mobile-sticky {
+  text-decoration: none;
+}
+
+.search-inner > div > a {
+  color: inherit;
+}
+
+.desktop-nav a,
+.mobile-menu nav a,
+.footer-main > div > a,
+.footer-bottom a {
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

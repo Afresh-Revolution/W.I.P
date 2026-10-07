@@ -1,0 +1,12 @@
+@use "scss/tokens";
+@use "scss/base";
+@use "scss/header";
+@use "scss/home";
+@use "scss/pages";
+@use "scss/links";
+@use "scss/admin";
+
+:root {
+  --sans: var(--font-sans-next), "DM Sans", Arial, sans-serif;
+  --serif: var(--font-serif-next), "Playfair Display", Georgia, serif;
+}

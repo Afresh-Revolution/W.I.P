@@ -1,0 +1,563 @@
+.admin-app {
+  background: var(--ivory);
+  color: var(--ink);
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+}
+
+.admin-app aside {
+  background: var(--forest-dark);
+  color: #f6f1e7;
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.admin-mark {
+  font-family: var(--serif);
+  color: var(--gold);
+  letter-spacing: 0.16em;
+  margin: 0;
+}
+
+.admin-app aside > small {
+  color: #c9d5d0;
+  margin-bottom: 18px;
+}
+
+.admin-app aside nav {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-app aside button {
+  color: #e7eee9;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  text-align: left;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-app aside button.active,
+.admin-app aside nav button:hover {
+  background: #174a3a;
+}
+
+.admin-app aside nav em {
+  background: var(--gold);
+  color: var(--forest-dark);
+  border-radius: 999px;
+  min-width: 22px;
+  text-align: center;
+  font-style: normal;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+.admin-app aside > button {
+  margin-top: auto;
+}
+
+.admin-main {
+  padding: 36px 40px 120px;
+  max-width: 1100px;
+}
+
+.admin-main header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.admin-main header p,
+.admin-login p {
+  color: var(--gold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.admin-main h1,
+.admin-main h2,
+.admin-login h1 {
+  font-family: var(--serif);
+  margin: 0;
+}
+
+.admin-main header a {
+  color: var(--wine);
+  font-weight: 700;
+}
+
+.admin-banner,
+.admin-notice,
+.form-error {
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.admin-banner {
+  background: #f4ead3;
+}
+
+.admin-banner p,
+.admin-help,
+.admin-notice {
+  margin: 0;
+}
+
+.admin-notice {
+  background: #e5f0ea;
+}
+
+.form-error {
+  color: var(--wine-dark);
+  background: #f8e8ee;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.admin-grid button {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  text-align: left;
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.admin-grid strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 2.4rem;
+  color: var(--wine);
+}
+
+.admin-stack,
+.admin-login form,
+.submission-card,
+.mail-card {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-stack > label,
+.admin-login label,
+.mail-card label,
+.split-fields label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.admin-app input,
+.admin-app textarea,
+.admin-app select,
+.admin-login input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.admin-stack small,
+.mail-card small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.admin-stack fieldset {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.admin-stack legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.split-fields,
+.record-row,
+.partner-edit,
+.card-actions,
+.filter-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.record-row input,
+.partner-edit input,
+.record-row select {
+  flex: 1;
+  min-width: 140px;
+}
+
+.logo-editor {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 20px;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 18px;
+}
+
+.logo-editor img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  background: var(--cream);
+  border-radius: 20px;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.image-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  display: grid;
+  cursor: pointer;
+}
+
+.image-card img,
+.submission-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+
+.image-card span,
+.image-card small,
+.image-card button {
+  padding: 0 12px 12px;
+}
+
+.file-btn {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--wine);
+  color: var(--wine);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.file-btn input,
+.image-card input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dp {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--forest);
+  color: white;
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.dp img,
+.partner-chip img,
+.partner-board img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.partner-chip,
+.partner-board p {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.partner-chip img,
+.partner-board img,
+.partner-fallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.partner-fallback {
+  display: grid;
+  place-items: center;
+  background: var(--forest);
+  color: white;
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.partner-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  margin-top: 28px;
+}
+
+.filter-row button,
+.card-actions button,
+.record-row > button,
+.partner-edit > button,
+.image-card button,
+.email-list button,
+.save-bar button {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.filter-row button.active {
+  background: var(--forest);
+  color: white;
+  border-color: var(--forest);
+}
+
+.submission-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.submission-card header,
+.email-list li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.submission-card em {
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+
+.submission-card em.new {
+  color: var(--wine);
+}
+
+.submission-card dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.submission-card dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.submission-card dd {
+  margin: 0;
+}
+
+.submission-card img {
+  width: min(100%, 280px);
+  border-radius: 12px;
+}
+
+.mail-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.mail-card {
+  background: #141d1a;
+  color: white;
+  border-radius: 28px;
+  padding: 32px 28px;
+}
+
+.mail-card > p {
+  color: #d8bc85;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.mail-card h2 {
+  color: #e7eee9;
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.mail-card input,
+.mail-card textarea {
+  background: transparent;
+  color: white;
+  border: 0;
+  border-bottom: 1px solid #73807b;
+  border-radius: 0;
+  padding-inline: 0;
+}
+
+.mail-card .check-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.mail-card .check-line input {
+  width: auto;
+}
+
+.email-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.email-list li {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.email-list small {
+  color: var(--muted);
+  margin-right: auto;
+  margin-left: 12px;
+}
+
+.save-bar {
+  position: fixed;
+  left: 270px;
+  right: 24px;
+  bottom: 18px;
+  background: var(--forest-dark);
+  color: white;
+  border-radius: 18px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  z-index: 20;
+}
+
+.save-bar span {
+  margin-right: auto;
+}
+
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at top left, rgba(200, 164, 93, 0.25), transparent 32%),
+    var(--forest-dark);
+  padding: 24px;
+}
+
+.admin-login form {
+  width: min(100%, 420px);
+  background: var(--ivory);
+  border-radius: 28px;
+  padding: 32px;
+}
+
+.admin-loading {
+  padding: 48px;
+}
+
+.bank-card {
+  background: var(--cream);
+  border-radius: 18px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.bank-card strong {
+  font-size: 1.3rem;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 980px) {
+  .admin-app,
+  .mail-layout,
+  .admin-grid,
+  .image-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-app aside {
+    position: static;
+    height: auto;
+  }
+
+  .admin-main {
+    padding: 24px 16px 120px;
+  }
+
+  .save-bar {
+    left: 12px;
+    right: 12px;
+  }
+
+  .submission-card dl {
+    grid-template-columns: 1fr;
+  }
+}
