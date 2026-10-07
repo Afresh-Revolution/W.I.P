@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { Pool, type PoolClient } from "pg";
-import type { BankDetails, GalleryExtra, HeroCopy, LgaEntry, MailSend, PartnerEntry, SiteImages, SiteText, Submission, Subscriber } from "./site-types";
+import type { BankDetails, GalleryExtra, HeroCopy, LgaEntry, MailSend, MembershipPlan, PartnerEntry, SiteImages, SiteText, Submission, Subscriber } from "./site-types";
 
 export type StoredContent = {
   reportedMembers?: number;
@@ -12,6 +12,7 @@ export type StoredContent = {
   galleryExtra?: GalleryExtra[];
   lgas?: LgaEntry[];
   partnerships?: PartnerEntry[];
+  plans?: MembershipPlan[];
   bank?: Partial<BankDetails>;
 };
 
@@ -64,6 +65,19 @@ async function withTransaction<T>(task: (client: PoolClient) => Promise<T>) {
   }
 }
 
+function asPlans(value: unknown): MembershipPlan[] | undefined {
+  if (Array.isArray(value)) return value as MembershipPlan[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? (parsed as MembershipPlan[]) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 function asObject<T>(value: unknown): T {
   if (typeof value === "string") return JSON.parse(value) as T;
   return (value || {}) as T;
@@ -78,7 +92,8 @@ export async function dbLoadContent(): Promise<StoredContent | null> {
     heroes: HeroCopy[];
     images: Partial<SiteImages>;
     bank: Partial<BankDetails>;
-  }>("select reported_members, established_year, text, heroes, images, bank from site_settings where id = 1");
+    plans: MembershipPlan[] | null;
+  }>("select reported_members, established_year, text, heroes, images, bank, plans from site_settings where id = 1");
   if (!settings.rowCount) return null;
   const row = settings.rows[0];
   const [lgas, partnerships, galleryExtra] = await Promise.all([
@@ -93,6 +108,7 @@ export async function dbLoadContent(): Promise<StoredContent | null> {
     heroes: asObject<HeroCopy[]>(row.heroes),
     images: asObject(row.images),
     bank: asObject(row.bank),
+    plans: asPlans(row.plans),
     lgas: lgas.rows,
     partnerships: partnerships.rows,
     galleryExtra: galleryExtra.rows
@@ -105,8 +121,8 @@ export async function dbSaveContent(stored: StoredContent) {
   const gallery = stored.galleryExtra || [];
   await withTransaction(async (client) => {
     await client.query(
-      `insert into site_settings (id, reported_members, established_year, text, heroes, images, bank, updated_at)
-       values (1, $1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb, now())
+      `insert into site_settings (id, reported_members, established_year, text, heroes, images, bank, plans, updated_at)
+       values (1, $1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, now())
        on conflict (id) do update set
          reported_members = excluded.reported_members,
          established_year = excluded.established_year,
@@ -114,6 +130,7 @@ export async function dbSaveContent(stored: StoredContent) {
          heroes = excluded.heroes,
          images = excluded.images,
          bank = excluded.bank,
+         plans = excluded.plans,
          updated_at = now()`,
       [
         stored.reportedMembers ?? 20000,
@@ -121,7 +138,8 @@ export async function dbSaveContent(stored: StoredContent) {
         JSON.stringify(stored.text || {}),
         JSON.stringify(stored.heroes || []),
         JSON.stringify(stored.images || {}),
-        JSON.stringify(stored.bank || {})
+        JSON.stringify(stored.bank || {}),
+        stored.plans ? JSON.stringify(stored.plans) : null
       ]
     );
     await client.query("delete from lgas");

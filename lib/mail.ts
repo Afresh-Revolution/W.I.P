@@ -1,5 +1,6 @@
+import { tierRequiresPayment } from "./plans";
 import { mailConfigured } from "./store";
-import type { Submission } from "./site-types";
+import type { MembershipPlan, Submission } from "./site-types";
 
 const wine = "#6f1735";
 const forest = "#174a3a";
@@ -64,7 +65,7 @@ function detailRows(rows: [string, string][]) {
   </table>`;
 }
 
-function submissionCopy(submission: Submission) {
+function submissionCopy(submission: Submission, plans: MembershipPlan[]) {
   const name = personName(submission.data);
   const hello = name ? `Hello ${escapeHtml(name)},` : "Hello,";
   const kind = {
@@ -73,7 +74,7 @@ function submissionCopy(submission: Submission) {
     partner: ["Partnership enquiry", "We have received your partnership enquiry."],
     interest: ["Interest received", "We have received your note of interest."]
   }[submission.type];
-  const paid = submission.type === "membership" && submission.data.tier && submission.data.tier !== "Community";
+  const paid = submission.type === "membership" && tierRequiresPayment(submission.data.tier || "", plans);
   const paymentNote = paid
     ? submission.paymentScreenshot
       ? "We also received your transfer screenshot. The team will confirm the payment and write to you again."
@@ -154,8 +155,8 @@ async function deliver(to: string, subject: string, html: string, text: string) 
   return true;
 }
 
-export async function sendSubmissionReceipt(submission: Submission) {
-  const copy = submissionCopy(submission);
+export async function sendSubmissionReceipt(submission: Submission, plans: MembershipPlan[] = []) {
+  const copy = submissionCopy(submission, plans);
   return deliver(personEmail(submission.data), copy.subject, copy.html, copy.text);
 }
 

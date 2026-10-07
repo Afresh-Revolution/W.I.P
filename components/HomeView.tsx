@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { pillars, programmes, promises, testimonials, tiers, stories } from "@/lib/data";
+import { pillars, programmes, promises, testimonials, stories } from "@/lib/data";
 import { liveCopy } from "@/lib/copy";
 import { Icon } from "./Icon";
 import Link from "next/link";
@@ -336,12 +336,12 @@ export function HomeView() {
         <div className="wrap">
           <SectionHead eyebrow="Membership" title="There Is A Place For You In WIPI" text="Choose the pathway that reflects your educational background or begin as a Community member." />
           <div className="tiers">
-            {tiers.map((tier) => (
-              <article key={tier.name} className={tier.featured ? "featured" : ""}>
+            {content.plans.map((tier, index) => (
+              <article key={tier.id} className={tier.featured ? "featured" : ""}>
                 {tier.featured ? <span className="recommended">Recommended</span> : null}
-                <span className="tier-index">{tier.index}</span>
+                <span className="tier-index">{String(index + 1).padStart(2, "0")}</span>
                 <h3>{tier.name}</h3>
-                <strong>{tier.price}</strong>
+                <strong>{tier.price || "Free"}</strong>
                 <p>{tier.text}</p>
                 <ButtonLink href="/join" variant={tier.featured ? "primary" : "secondary"}>
                   Choose {tier.name}

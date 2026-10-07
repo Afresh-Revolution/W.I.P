@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { deleteSubmission, listSubmissions, patchSubmission } from "@/lib/cms";
+import { deleteSubmission, getPublicContent, listSubmissions, patchSubmission } from "@/lib/cms";
+import { tierRequiresPayment } from "@/lib/plans";
 import { personEmail, sendPaymentConfirmation } from "@/lib/mail";
 import type { Submission } from "@/lib/site-types";
 
@@ -21,7 +22,8 @@ export async function PATCH(request: Request) {
     if (body.confirmPayment) {
       const current = (await listSubmissions()).find((item) => item.id === body.id);
       if (!current) return NextResponse.json({ error: "Submission not found." }, { status: 404 });
-      if (current.type !== "membership" || !current.data.tier || current.data.tier === "Community") {
+      const plans = (await getPublicContent()).plans;
+      if (current.type !== "membership" || !tierRequiresPayment(current.data.tier || "", plans)) {
         return NextResponse.json({ error: "Only a paid membership can be confirmed." }, { status: 400 });
       }
       if (!personEmail(current.data)) return NextResponse.json({ error: "This registration has no email address." }, { status: 400 });

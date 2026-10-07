@@ -397,10 +397,64 @@
   border: 1px solid var(--wine);
 }
 
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan-flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-weight: 700;
+}
+
+.plan-flag input {
+  width: auto;
+}
+
+.plan-actions > button:disabled {
+  opacity: 0.4;
+}
+
+.revenue-card {
+  background: var(--forest);
+  color: #fff;
+  border-radius: 24px;
+  padding: 22px 24px;
+}
+
+.revenue-card span {
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.revenue-card strong {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.revenue-card p {
+  margin: 10px 0 0;
+  color: #d7e4de;
+  max-width: 46ch;
+}
+
 .admin-app .filter-row button,
 .admin-app .card-actions button,
 .admin-app .record-row > button,
 .admin-app .partner-edit > button,
+.admin-app .plan-actions > button,
 .admin-app .image-card button,
 .admin-app .email-list button {
   background: #fff;

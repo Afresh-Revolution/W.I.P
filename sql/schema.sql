@@ -12,8 +12,11 @@ create table if not exists site_settings (
   heroes jsonb not null default '[]'::jsonb,
   images jsonb not null default '{}'::jsonb,
   bank jsonb not null default '{}'::jsonb,
+  plans jsonb,
   updated_at timestamptz not null default now()
 );
+
+alter table site_settings add column if not exists plans jsonb;
 
 create table if not exists lgas (
   id uuid primary key default gen_random_uuid(),

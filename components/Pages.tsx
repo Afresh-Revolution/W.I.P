@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, ReactNode, useMemo, useState } from "react";
-import { faqs, journey, leaders, legal, objectives, programmes, promises, slugify, stories, tiers, uniforms } from "@/lib/data";
+import { faqs, journey, leaders, legal, objectives, programmes, promises, slugify, stories, uniforms } from "@/lib/data";
+import { tierRequiresPayment } from "@/lib/plans";
 import type { BankDetails } from "@/lib/site-types";
 import { isRasterImage } from "@/lib/images";
 import { liveCopy } from "@/lib/copy";
@@ -174,6 +175,7 @@ export function ProgrammeDetailView({ slug }: { slug: string }) {
 
 export function MembershipView() {
   const media = useMedia();
+  const { plans } = useSiteContent();
   const [open, setOpen] = useState(0);
   return (
     <main>
@@ -198,12 +200,12 @@ export function MembershipView() {
         <div className="wrap">
           <SectionHead eyebrow="Membership" title="There Is A Place For You In WIPI" text="Choose the pathway that reflects your educational background or begin as a Community member." />
           <div className="tiers">
-            {tiers.map((tier) => (
-              <article key={tier.name} className={tier.featured ? "featured" : ""}>
+            {plans.map((tier, index) => (
+              <article key={tier.id} className={tier.featured ? "featured" : ""}>
                 {tier.featured ? <span className="recommended">Recommended</span> : null}
-                <span className="tier-index">{tier.index}</span>
+                <span className="tier-index">{String(index + 1).padStart(2, "0")}</span>
                 <h3>{tier.name}</h3>
-                <strong>{tier.price}</strong>
+                <strong>{tier.price || "Free"}</strong>
                 <p>{tier.text}</p>
                 <ButtonLink href="/join" variant={tier.featured ? "primary" : "secondary"}>
                   Choose {tier.name}
@@ -763,14 +765,14 @@ function BankCard({ bank, children }: { bank: BankDetails; children?: ReactNode 
 }
 
 export function JoinView() {
-  const { lgas, bank } = useSiteContent();
+  const { lgas, bank, plans } = useSiteContent();
   const [step, setStep] = useState(1);
   const [done, setDone] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [shot, setShot] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const paid = Boolean(values.tier && values.tier !== "Community");
+  const paid = tierRequiresPayment(values.tier || "", plans);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -786,6 +788,8 @@ export function JoinView() {
       setError("");
       return;
     }
+    const chosen = plans.find((plan) => plan.name === next.tier);
+    if (chosen) next.price = chosen.price || "Free";
     if (paid && bank.accountNumber && !shot) {
       setError("After you pay, upload a screenshot of the transfer, then submit.");
       return;
@@ -908,20 +912,21 @@ export function JoinView() {
                 <h2>Choose your membership</h2>
                 <p>Paid categories are confirmed by bank transfer. The account details appear once you choose one.</p>
                 <div className="join-tiers">
-                  {[["Bronze", "₦2,000"], ["Silver", "₦5,000"], ["Gold", "₦10,000"], ["Community", "Free"]].map((item, index) => (
-                    <label key={item[0]} className={index === 2 ? "suggested" : ""}>
+                  {plans.map((plan) => (
+                    <label key={plan.id} className={plan.featured ? "suggested" : ""}>
                       <input
                         type="radio"
                         name="tier"
-                        value={item[0]}
-                        defaultChecked={values.tier === item[0]}
-                        onChange={() => setValues((current) => ({ ...current, tier: item[0] }))}
+                        value={plan.name}
+                        defaultChecked={values.tier === plan.name}
+                        onChange={() => setValues((current) => ({ ...current, tier: plan.name }))}
                         required
                       />
                       <span>
-                        {index === 2 ? <small>Suggested</small> : null}
-                        <b>{item[0]}</b>
-                        <strong>{item[1]}</strong>
+                        {plan.featured ? <small>Suggested</small> : null}
+                        <b>{plan.name}</b>
+                        <strong>{plan.price || "Free"}</strong>
+                        {plan.text ? <em>{plan.text}</em> : null}
                       </span>
                     </label>
                   ))}

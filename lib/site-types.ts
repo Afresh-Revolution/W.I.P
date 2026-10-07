@@ -65,6 +65,14 @@ export type PartnerEntry = {
   image: string;
 };
 
+export type MembershipPlan = {
+  id: string;
+  name: string;
+  price: string;
+  text: string;
+  featured: boolean;
+};
+
 export type GalleryExtra = {
   id: string;
   image: string;
@@ -95,6 +103,7 @@ export type PublicContent = {
   galleryExtra: GalleryExtra[];
   lgas: LgaEntry[];
   partnerships: PartnerEntry[];
+  plans: MembershipPlan[];
   bank: BankDetails;
 };
 

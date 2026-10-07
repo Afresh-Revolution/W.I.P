@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addSubmission } from "@/lib/cms";
+import { addSubmission, getPublicContent } from "@/lib/cms";
 import { sendSubmissionReceipt } from "@/lib/mail";
 import { saveImage } from "@/lib/store";
 
@@ -34,7 +34,8 @@ export async function POST(request: Request) {
     const screenshot = file instanceof File && file.size > 0 ? await saveImage(file, { anyImage: true }) : "";
     const submission = await addSubmission(type, data, screenshot);
     try {
-      await sendSubmissionReceipt(submission);
+      const plans = (await getPublicContent()).plans;
+      await sendSubmissionReceipt(submission, plans);
     } catch (error) {
       console.error(error);
     }

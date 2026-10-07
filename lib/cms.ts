@@ -1,7 +1,8 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { gallery, heroSlides, images, lgas } from "./data";
 import { originalCopy } from "./copy";
-import type { BankDetails, GalleryExtra, HeroCopy, LgaEntry, MailSend, PartnerEntry, PublicContent, PublicHero, SiteImages, SiteText, Submission, SubmissionType, Subscriber } from "./site-types";
+import { defaultPlans } from "./plans";
+import type { BankDetails, GalleryExtra, HeroCopy, LgaEntry, MailSend, MembershipPlan, PartnerEntry, PublicContent, PublicHero, SiteImages, SiteText, Submission, SubmissionType, Subscriber } from "./site-types";
 import {
   databaseConfigured,
   dbDeleteSubmission,
@@ -69,6 +70,20 @@ const defaultBank = (): BankDetails => ({
   instructions: "Transfer the membership contribution, then upload a screenshot of the payment so the team can confirm it."
 });
 
+function presentPlans(saved: MembershipPlan[] | undefined): MembershipPlan[] {
+  if (!Array.isArray(saved)) return defaultPlans();
+  return saved
+    .map((item) => ({
+      id: clip(item.id, 80) || clip(item.name, 80).toLowerCase().replace(/[^a-z0-9]+/g, "-") || crypto.randomUUID(),
+      name: clip(item.name, 80),
+      price: clip(item.price, 40),
+      text: clipBlock(item.text, 400),
+      featured: Boolean(item.featured)
+    }))
+    .filter((item) => item.name)
+    .slice(0, 12);
+}
+
 function clip(value: unknown, max: number) {
   return String(value ?? "")
     .replace(/\s+/g, " ")
@@ -123,6 +138,7 @@ type StoredContent = {
   galleryExtra?: GalleryExtra[];
   lgas?: LgaEntry[];
   partnerships?: PartnerEntry[];
+  plans?: MembershipPlan[];
   bank?: Partial<BankDetails>;
 };
 
@@ -211,6 +227,7 @@ export function presentContent(saved: StoredContent | null): PublicContent {
     galleryExtra,
     lgas: lgaList.length ? lgaList : defaultLgas(),
     partnerships,
+    plans: presentPlans(saved?.plans),
     bank: {
       bankName: clip(saved?.bank?.bankName, 80),
       accountName: clip(saved?.bank?.accountName, 120),
@@ -231,6 +248,7 @@ function toStored(content: PublicContent): StoredContent {
     galleryExtra: presented.galleryExtra,
     lgas: presented.lgas,
     partnerships: presented.partnerships,
+    plans: presented.plans,
     bank: presented.bank
   };
 }

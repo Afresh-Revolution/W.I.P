@@ -2,10 +2,11 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { liveCopy, originalCopy } from "@/lib/copy";
+import { formatNaira, membershipRevenue, tierRequiresPayment } from "@/lib/plans";
 import { Icon } from "../Icon";
-import { imageSlots, type GalleryExtra, type LgaEntry, type MailSend, type PublicContent, type SiteText, type Submission, type Subscriber } from "@/lib/site-types";
+import { imageSlots, type GalleryExtra, type LgaEntry, type MailSend, type MembershipPlan, type PublicContent, type SiteText, type Submission, type Subscriber } from "@/lib/site-types";
 
-type Section = "overview" | "text" | "images" | "movement" | "partners" | "submissions" | "payments" | "mail";
+type Section = "overview" | "text" | "images" | "movement" | "partners" | "plans" | "submissions" | "payments" | "mail";
 
 const nav: [Section, string][] = [
   ["overview", "Overview"],
@@ -13,6 +14,7 @@ const nav: [Section, string][] = [
   ["images", "Images & logo"],
   ["movement", "Members & LGAs"],
   ["partners", "Partnerships"],
+  ["plans", "Membership"],
   ["submissions", "Submissions"],
   ["payments", "Bank & payments"],
   ["mail", "Bulk email"]
@@ -229,6 +231,10 @@ export function AdminPanel() {
             <button type="button" onClick={() => openSection("partners")}>
               <strong>{content.partnerships.length}</strong>
               <span>Partnerships</span>
+            </button>
+            <button type="button" onClick={() => openSection("plans")}>
+              <strong>{content.plans.length}</strong>
+              <span>Membership plans</span>
             </button>
             <button type="button" onClick={() => openSection("submissions")}>
               <strong>{submissions.filter((item) => item.status === "new").length}</strong>
@@ -475,7 +481,15 @@ export function AdminPanel() {
           </section>
         ) : null}
 
-        {section === "submissions" ? <SubmissionList items={filtered} filter={filter} setFilter={setFilter} onChange={setSubmissions} setError={setError} setNotice={setNotice} /> : null}
+        {section === "plans" ? (
+          <PlanEditor
+            plans={content.plans}
+            submissions={submissions}
+            onChange={(plans) => setContent({ ...content, plans })}
+          />
+        ) : null}
+
+        {section === "submissions" ? <SubmissionList items={filtered} plans={content.plans} filter={filter} setFilter={setFilter} onChange={setSubmissions} setError={setError} setNotice={setNotice} /> : null}
 
         {section === "payments" ? (
           <section className="admin-stack">
@@ -508,7 +522,7 @@ export function AdminPanel() {
                 <p>{item.data.tier || "Membership"} · {item.data.lga || "LGA not stated"}</p>
                 <p>{item.data.email || "No email address"}</p>
                 {item.paymentScreenshot ? <a href={item.paymentScreenshot} target="_blank" rel="noreferrer"><img src={item.paymentScreenshot} alt="Payment screenshot" /></a> : <p>No screenshot submitted.</p>}
-                <ConfirmPayment item={item} onDone={(submission) => setSubmissions((current) => current.map((entry) => (entry.id === submission.id ? submission : entry)))} setError={setError} setNotice={setNotice} />
+                <ConfirmPayment item={item} plans={content.plans} onDone={(submission) => setSubmissions((current) => current.map((entry) => (entry.id === submission.id ? submission : entry)))} setError={setError} setNotice={setNotice} />
               </article>
             ))}
           </section>
@@ -548,19 +562,96 @@ export function AdminPanel() {
   );
 }
 
+function moveItem<T>(list: T[], index: number, direction: -1 | 1) {
+  const next = index + direction;
+  if (next < 0 || next >= list.length) return list;
+  const copy = [...list];
+  const [item] = copy.splice(index, 1);
+  copy.splice(next, 0, item);
+  return copy;
+}
+
+function PlanEditor({ plans, submissions, onChange }: { plans: MembershipPlan[]; submissions: Submission[]; onChange: (plans: MembershipPlan[]) => void }) {
+  const revenue = membershipRevenue(submissions, plans);
+  return (
+    <section className="admin-stack">
+      <article className="revenue-card">
+        <span>Confirmed revenue</span>
+        <strong>{formatNaira(revenue.total)}</strong>
+        <p>
+          {revenue.count} confirmed {revenue.count === 1 ? "membership" : "memberships"}. This total updates when a payment is confirmed.
+        </p>
+      </article>
+      <p className="admin-help">These plans appear on the homepage, the membership page, and the registration form. Mark one as recommended. Use Free, or leave the price empty, when no transfer is required.</p>
+      {plans.map((plan, index) => (
+        <fieldset className="plan-card" key={plan.id}>
+          <legend>Plan {String(index + 1).padStart(2, "0")}</legend>
+          <label>
+            Name
+            <input aria-label="Plan name" value={plan.name} onChange={(event) => onChange(plans.map((item, itemIndex) => (itemIndex === index ? { ...item, name: event.target.value } : item)))} />
+          </label>
+          <label>
+            Price
+            <input aria-label="Plan price" value={plan.price} placeholder="₦2,000 or Free" onChange={(event) => onChange(plans.map((item, itemIndex) => (itemIndex === index ? { ...item, price: event.target.value } : item)))} />
+          </label>
+          <label>
+            Description
+            <textarea rows={3} aria-label="Plan description" value={plan.text} onChange={(event) => onChange(plans.map((item, itemIndex) => (itemIndex === index ? { ...item, text: event.target.value } : item)))} />
+          </label>
+          <div className="plan-actions">
+            <label className="plan-flag">
+              <input
+                type="checkbox"
+                checked={plan.featured}
+                onChange={(event) =>
+                  onChange(
+                    plans.map((item, itemIndex) => ({
+                      ...item,
+                      featured: event.target.checked ? itemIndex === index : itemIndex === index ? false : item.featured
+                    }))
+                  )
+                }
+              />
+              Recommended
+            </label>
+            <button type="button" disabled={index === 0} onClick={() => onChange(moveItem(plans, index, -1))}>
+              Move up
+            </button>
+            <button type="button" disabled={index === plans.length - 1} onClick={() => onChange(moveItem(plans, index, 1))}>
+              Move down
+            </button>
+            <button type="button" onClick={() => onChange(plans.filter((item) => item.id !== plan.id))}>
+              Remove
+            </button>
+          </div>
+        </fieldset>
+      ))}
+      <button
+        className="btn btn-secondary"
+        type="button"
+        onClick={() => onChange([...plans, { id: crypto.randomUUID(), name: "", price: "", text: "", featured: false }])}
+      >
+        Add plan
+      </button>
+    </section>
+  );
+}
+
 function ConfirmPayment({
   item,
+  plans,
   onDone,
   setError,
   setNotice
 }: {
   item: Submission;
+  plans: MembershipPlan[];
   onDone: (submission: Submission) => void;
   setError: (value: string) => void;
   setNotice: (value: string) => void;
 }) {
   const [pending, setPending] = useState(false);
-  if (item.type !== "membership" || !item.data.tier || item.data.tier === "Community") return null;
+  if (!tierRequiresPayment(item.data.tier || "", plans)) return null;
   if (item.paymentConfirmed) return <p className="paid-note">Payment confirmed. The member has been emailed.</p>;
   return (
     <button
@@ -638,6 +729,7 @@ function GalleryAdder({ onAdd, onUpload }: { onAdd: (item: GalleryExtra) => void
 
 function SubmissionList({
   items,
+  plans,
   filter,
   setFilter,
   onChange,
@@ -645,6 +737,7 @@ function SubmissionList({
   setNotice
 }: {
   items: Submission[];
+  plans: MembershipPlan[];
   filter: string;
   setFilter: (value: string) => void;
   onChange: (items: Submission[] | ((current: Submission[]) => Submission[])) => void;
@@ -686,6 +779,7 @@ function SubmissionList({
             {item.type === "membership" ? (
               <ConfirmPayment
                 item={item}
+                plans={plans}
                 onDone={(submission) => onChange((current) => current.map((entry) => (entry.id === submission.id ? submission : entry)))}
                 setError={setError}
                 setNotice={setNotice}
