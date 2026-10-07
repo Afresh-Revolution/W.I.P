@@ -96,29 +96,47 @@ export function Header({ onSearch }: { onSearch: () => void }) {
 
 export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState("");
-  const results = searchIndex.filter((item) => `${item[0]} ${item[2]}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const needle = query.trim().toLowerCase();
+  const results = searchIndex.filter((item) => `${item[0]} ${item[2]}`.toLowerCase().includes(needle));
   return (
-    <div className="search-overlay" role="dialog" aria-modal="true" aria-label="Search WIPI">
-      <div className="search-top">
-        <button className="icon-btn" type="button" aria-label="Close" onClick={onClose}>
-          <Icon name="close" />
-        </button>
-      </div>
-      <div className="search-inner">
-        <span className="eyebrow">Search WIPI</span>
-        <label className="search">
+    <div
+      className="search-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search WIPI"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="search-panel">
+        <div className="search-top">
+          <div>
+            <span className="eyebrow">Search WIPI</span>
+            <h2>What are you looking for?</h2>
+          </div>
+          <button className="icon-btn search-close" type="button" aria-label="Close" onClick={onClose}>
+            <Icon name="close" />
+          </button>
+        </div>
+        <label className="search-box">
+          <Icon name="search" />
           <span className="sr-only">What are you looking for?</span>
-          <input autoFocus placeholder="What are you looking for?" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <input autoFocus placeholder="Membership, programmes, reach…" value={query} onChange={(event) => setQuery(event.target.value)} />
         </label>
+        <p className="search-count">
+          {results.length} {results.length === 1 ? "page" : "pages"}
+        </p>
         <div className="search-results">
           {results.map((item) => (
             <Link key={item[1]} href={item[1]} onClick={onClose}>
-              <b>{item[0]}</b>
-              <span>{item[2]}</span>
+              <span>
+                <b>{item[0]}</b>
+                <small>{item[2]}</small>
+              </span>
               <Icon name="arrow" />
             </Link>
           ))}
-          {results.length === 0 ? <p>No matching pages yet. Try membership, programmes or reach.</p> : null}
+          {results.length === 0 ? <p>No matching pages. Try membership, programmes or reach.</p> : null}
         </div>
       </div>
     </div>

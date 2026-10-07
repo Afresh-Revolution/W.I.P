@@ -151,13 +151,14 @@ export async function dbSaveContent(stored: StoredContent) {
   });
 }
 
-function submissionFromRow(row: { id: string; type: Submission["type"]; status: Submission["status"]; data: Record<string, string>; payment_screenshot: string | null; created_at: Date | string }): Submission {
+function submissionFromRow(row: { id: string; type: Submission["type"]; status: Submission["status"]; data: Record<string, string>; payment_screenshot: string | null; payment_confirmed?: boolean | null; created_at: Date | string }): Submission {
   return {
     id: row.id,
     type: row.type,
     status: row.status,
     data: asObject(row.data),
     paymentScreenshot: row.payment_screenshot || undefined,
+    paymentConfirmed: Boolean(row.payment_confirmed),
     createdAt: new Date(row.created_at).toISOString()
   };
 }
@@ -168,9 +169,9 @@ export async function dbInsertSubmission(submission: Submission) {
   try {
     await client.query("begin");
     await client.query(
-      `insert into submissions (id, type, status, data, payment_screenshot, created_at)
-       values ($1, $2, $3, $4::jsonb, $5, $6)`,
-      [submission.id, submission.type, submission.status, JSON.stringify(submission.data), submission.paymentScreenshot || null, submission.createdAt]
+      `insert into submissions (id, type, status, data, payment_screenshot, payment_confirmed, created_at)
+       values ($1, $2, $3, $4::jsonb, $5, $6, $7)`,
+      [submission.id, submission.type, submission.status, JSON.stringify(submission.data), submission.paymentScreenshot || null, Boolean(submission.paymentConfirmed), submission.createdAt]
     );
     await client.query(
       `delete from submissions where id in (
@@ -194,12 +195,13 @@ export async function dbListSubmissions() {
     status: Submission["status"];
     data: Record<string, string>;
     payment_screenshot: string | null;
+    payment_confirmed: boolean | null;
     created_at: Date;
-  }>("select id, type, status, data, payment_screenshot, created_at from submissions order by created_at desc limit 2000");
+  }>("select id, type, status, data, payment_screenshot, payment_confirmed, created_at from submissions order by created_at desc limit 2000");
   return result.rows.map(submissionFromRow);
 }
 
-export async function dbPatchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string }) {
+export async function dbPatchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string; paymentConfirmed?: boolean }) {
   await ensureSchema();
   const current = await getPool().query("select id from submissions where id = $1", [id]);
   if (!current.rowCount) throw new Error("Submission not found.");
@@ -209,14 +211,16 @@ export async function dbPatchSubmission(id: string, patch: { status?: Submission
     status: Submission["status"];
     data: Record<string, string>;
     payment_screenshot: string | null;
+    payment_confirmed: boolean | null;
     created_at: Date;
   }>(
     `update submissions
      set status = coalesce($2, status),
-         payment_screenshot = case when $3 then $4 else payment_screenshot end
+         payment_screenshot = case when $3 then $4 else payment_screenshot end,
+         payment_confirmed = coalesce($5, payment_confirmed)
      where id = $1
-     returning id, type, status, data, payment_screenshot, created_at`,
-    [id, patch.status || null, patch.paymentScreenshot !== undefined, patch.paymentScreenshot || null]
+     returning id, type, status, data, payment_screenshot, payment_confirmed, created_at`,
+    [id, patch.status || null, patch.paymentScreenshot !== undefined, patch.paymentScreenshot || null, patch.paymentConfirmed ?? null]
   );
   return submissionFromRow(result.rows[0]);
 }

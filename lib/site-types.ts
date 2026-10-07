@@ -107,6 +107,7 @@ export type Submission = {
   status: "new" | "reviewed";
   data: Record<string, string>;
   paymentScreenshot?: string;
+  paymentConfirmed?: boolean;
 };
 
 export type Subscriber = {

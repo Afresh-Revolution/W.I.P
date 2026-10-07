@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addSubmission } from "@/lib/cms";
+import { sendSubmissionReceipt } from "@/lib/mail";
 import { saveImage } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +31,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid submission." }, { status: 400 });
     }
     const file = form.get("screenshot");
-    const screenshot = file instanceof File && file.size > 0 ? await saveImage(file) : "";
+    const screenshot = file instanceof File && file.size > 0 ? await saveImage(file, { anyImage: true }) : "";
     const submission = await addSubmission(type, data, screenshot);
+    try {
+      await sendSubmissionReceipt(submission);
+    } catch (error) {
+      console.error(error);
+    }
     return NextResponse.json({ ok: true, id: submission.id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save this submission.";

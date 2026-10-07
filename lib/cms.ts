@@ -288,11 +288,12 @@ export async function listSubmissions() {
   return stored?.submissions || [];
 }
 
-export async function patchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string }) {
+export async function patchSubmission(id: string, patch: { status?: Submission["status"]; paymentScreenshot?: string; paymentConfirmed?: boolean }) {
   if (databaseConfigured()) {
     return dbPatchSubmission(id, {
       status: patch.status,
-      paymentScreenshot: patch.paymentScreenshot !== undefined ? safeUrl(patch.paymentScreenshot) || undefined : undefined
+      paymentScreenshot: patch.paymentScreenshot !== undefined ? safeUrl(patch.paymentScreenshot) || undefined : undefined,
+      paymentConfirmed: patch.paymentConfirmed
     });
   }
   let updated: Submission | null = null;
@@ -302,7 +303,8 @@ export async function patchSubmission(id: string, patch: { status?: Submission["
       updated = {
         ...item,
         status: patch.status === "reviewed" || patch.status === "new" ? patch.status : item.status,
-        paymentScreenshot: patch.paymentScreenshot !== undefined ? safeUrl(patch.paymentScreenshot) || undefined : item.paymentScreenshot
+        paymentScreenshot: patch.paymentScreenshot !== undefined ? safeUrl(patch.paymentScreenshot) || undefined : item.paymentScreenshot,
+        paymentConfirmed: patch.paymentConfirmed ?? item.paymentConfirmed
       };
       return updated;
     })

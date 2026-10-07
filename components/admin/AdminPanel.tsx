@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { liveCopy, originalCopy } from "@/lib/copy";
+import { Icon } from "../Icon";
 import { imageSlots, type GalleryExtra, type LgaEntry, type MailSend, type PublicContent, type SiteText, type Submission, type Subscriber } from "@/lib/site-types";
 
 type Section = "overview" | "text" | "images" | "movement" | "partners" | "submissions" | "payments" | "mail";
@@ -73,6 +74,7 @@ export function AdminPanel() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [ready, setReady] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   async function load() {
     const [contentResponse, submissionResponse, mailResponse] = await Promise.all([
@@ -101,6 +103,18 @@ export function AdminPanel() {
   useEffect(() => {
     load().catch(() => setError("Could not load the admin panel."));
   }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  function openSection(id: Section) {
+    setSection(id);
+    setMenuOpen(false);
+  }
 
   const dirty = content ? JSON.stringify(content) !== baseline : false;
   const filtered = submissions.filter((item) => filter === "all" || item.type === filter);
@@ -157,12 +171,22 @@ export function AdminPanel() {
 
   return (
     <main className="admin-app">
-      <aside>
+      <header className="admin-top">
+        <button className="admin-menu" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
+          <Icon name={menuOpen ? "close" : "menu"} />
+        </button>
+        <p className="admin-mark">WIPI</p>
+        <a href="/" target="_blank" rel="noreferrer">
+          View site
+        </a>
+      </header>
+      {menuOpen ? <button className="admin-scrim" type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)} /> : null}
+      <aside className={menuOpen ? "open" : ""}>
         <p className="admin-mark">WIPI</p>
         <small>Admin</small>
         <nav aria-label="Admin">
           {nav.map(([id, label]) => (
-            <button key={id} type="button" className={section === id ? "active" : ""} onClick={() => setSection(id)}>
+            <button key={id} type="button" className={section === id ? "active" : ""} onClick={() => openSection(id)}>
               {label}
               {id === "submissions" && submissions.some((item) => item.status === "new") ? <em>{submissions.filter((item) => item.status === "new").length}</em> : null}
             </button>
@@ -194,27 +218,27 @@ export function AdminPanel() {
 
         {section === "overview" ? (
           <section className="admin-grid">
-            <button type="button" onClick={() => setSection("movement")}>
+            <button type="button" onClick={() => openSection("movement")}>
               <strong>{content.reportedMembers.toLocaleString("en-NG")}+</strong>
               <span>Reported members</span>
             </button>
-            <button type="button" onClick={() => setSection("movement")}>
+            <button type="button" onClick={() => openSection("movement")}>
               <strong>{content.lgas.length}</strong>
               <span>Local government areas</span>
             </button>
-            <button type="button" onClick={() => setSection("partners")}>
+            <button type="button" onClick={() => openSection("partners")}>
               <strong>{content.partnerships.length}</strong>
               <span>Partnerships</span>
             </button>
-            <button type="button" onClick={() => setSection("submissions")}>
+            <button type="button" onClick={() => openSection("submissions")}>
               <strong>{submissions.filter((item) => item.status === "new").length}</strong>
               <span>New submissions</span>
             </button>
-            <button type="button" onClick={() => setSection("payments")}>
+            <button type="button" onClick={() => openSection("payments")}>
               <strong>{payments.filter((item) => item.paymentScreenshot).length}</strong>
               <span>Payment screenshots</span>
             </button>
-            <button type="button" onClick={() => setSection("mail")}>
+            <button type="button" onClick={() => openSection("mail")}>
               <strong>{subscribers.length}</strong>
               <span>Update subscribers</span>
             </button>
@@ -451,12 +475,12 @@ export function AdminPanel() {
           </section>
         ) : null}
 
-        {section === "submissions" ? <SubmissionList items={filtered} filter={filter} setFilter={setFilter} onChange={setSubmissions} setError={setError} /> : null}
+        {section === "submissions" ? <SubmissionList items={filtered} filter={filter} setFilter={setFilter} onChange={setSubmissions} setError={setError} setNotice={setNotice} /> : null}
 
         {section === "payments" ? (
           <section className="admin-stack">
             <h2>Bank details</h2>
-            <p className="admin-help">These details are shown when a woman chooses a paid membership, along with a place to upload her transfer screenshot.</p>
+            <p className="admin-help">Members see these details after they choose a paid membership. They pay, then submit the transfer screenshot with their registration.</p>
             <label>
               Bank name
               <input value={content.bank.bankName} onChange={(event) => setContent({ ...content, bank: { ...content.bank, bankName: event.target.value } })} />
@@ -482,32 +506,9 @@ export function AdminPanel() {
                   <span>{when(item.createdAt)}</span>
                 </header>
                 <p>{item.data.tier || "Membership"} · {item.data.lga || "LGA not stated"}</p>
-                {item.paymentScreenshot ? <a href={item.paymentScreenshot} target="_blank" rel="noreferrer"><img src={item.paymentScreenshot} alt="Payment screenshot" /></a> : <p>No screenshot yet.</p>}
-                <label className="file-btn">
-                  {item.paymentScreenshot ? "Replace screenshot" : "Upload screenshot"}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={async (event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        const url = await uploadFile(file);
-                        const response = await fetch("/api/admin/submissions", {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ id: item.id, paymentScreenshot: url })
-                        });
-                        const payload = await response.json();
-                        if (!response.ok) throw new Error(payload.error || "Could not attach the screenshot.");
-                        setSubmissions((current) => current.map((entry) => (entry.id === item.id ? payload.submission : entry)));
-                        setNotice("Payment screenshot saved.");
-                      } catch (reason) {
-                        setError(reason instanceof Error ? reason.message : "Upload failed.");
-                      }
-                    }}
-                  />
-                </label>
+                <p>{item.data.email || "No email address"}</p>
+                {item.paymentScreenshot ? <a href={item.paymentScreenshot} target="_blank" rel="noreferrer"><img src={item.paymentScreenshot} alt="Payment screenshot" /></a> : <p>No screenshot submitted.</p>}
+                <ConfirmPayment item={item} onDone={(submission) => setSubmissions((current) => current.map((entry) => (entry.id === submission.id ? submission : entry)))} setError={setError} setNotice={setNotice} />
               </article>
             ))}
           </section>
@@ -544,6 +545,50 @@ export function AdminPanel() {
         ) : null}
       </div>
     </main>
+  );
+}
+
+function ConfirmPayment({
+  item,
+  onDone,
+  setError,
+  setNotice
+}: {
+  item: Submission;
+  onDone: (submission: Submission) => void;
+  setError: (value: string) => void;
+  setNotice: (value: string) => void;
+}) {
+  const [pending, setPending] = useState(false);
+  if (item.type !== "membership" || !item.data.tier || item.data.tier === "Community") return null;
+  if (item.paymentConfirmed) return <p className="paid-note">Payment confirmed. The member has been emailed.</p>;
+  return (
+    <button
+      className="btn btn-primary"
+      type="button"
+      disabled={pending}
+      onClick={async () => {
+        setPending(true);
+        setError("");
+        try {
+          const response = await fetch("/api/admin/submissions", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: item.id, confirmPayment: true })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Could not confirm this payment.");
+          onDone(payload.submission);
+          setNotice(payload.emailed ? "Confirmation email sent." : payload.emailError || "Payment confirmed, but the email was not sent.");
+        } catch (reason) {
+          setError(reason instanceof Error ? reason.message : "Could not confirm this payment.");
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      {pending ? "Sending…" : "Confirm payment"}
+    </button>
   );
 }
 
@@ -596,13 +641,15 @@ function SubmissionList({
   filter,
   setFilter,
   onChange,
-  setError
+  setError,
+  setNotice
 }: {
   items: Submission[];
   filter: string;
   setFilter: (value: string) => void;
   onChange: (items: Submission[] | ((current: Submission[]) => Submission[])) => void;
   setError: (value: string) => void;
+  setNotice: (value: string) => void;
 }) {
   const filters = ["all", "membership", "contact", "partner", "interest"];
   return (
@@ -636,6 +683,14 @@ function SubmissionList({
             </a>
           ) : null}
           <div className="card-actions">
+            {item.type === "membership" ? (
+              <ConfirmPayment
+                item={item}
+                onDone={(submission) => onChange((current) => current.map((entry) => (entry.id === submission.id ? submission : entry)))}
+                setError={setError}
+                setNotice={setNotice}
+              />
+            ) : null}
             <button
               type="button"
               onClick={async () => {
@@ -707,11 +762,13 @@ function MailDesk({
   const [includeSubmissions, setIncludeSubmissions] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [pending, setPending] = useState(false);
-  const audience = useMemo(() => {
-    const all = new Set(subscribers.map((item) => item.email));
-    if (includeSubmissions) submissionEmails.forEach((email) => all.add(email));
+  const subscriberCount = subscribers.length;
+  const combinedCount = useMemo(() => {
+    const all = new Set(subscribers.map((item) => item.email.toLowerCase()));
+    submissionEmails.forEach((email) => all.add(email.toLowerCase()));
     return all.size;
-  }, [subscribers, submissionEmails, includeSubmissions]);
+  }, [subscribers, submissionEmails]);
+  const audience = includeSubmissions ? combinedCount : subscriberCount;
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -740,32 +797,52 @@ function MailDesk({
   }
 
   return (
-    <section className="mail-layout">
-      <form className="mail-card" onSubmit={send}>
-        <p>{title}</p>
-        <h2>{text}</h2>
+    <section className="mail-studio">
+      <form className="mail-compose" onSubmit={send}>
+        <span className="eyebrow">Bulk email</span>
+        <h2>Write an update</h2>
+        <p className="admin-help">{text}</p>
         <label>
           Subject
-          <input value={subject} onChange={(event) => setSubject(event.target.value)} required />
+          <input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="A note from WIPI" required />
         </label>
         <label>
           Message
           <textarea rows={8} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Write the update for everyone on the list." required />
         </label>
-        <label className="check-line">
-          <input type="checkbox" checked={includeSubmissions} onChange={(event) => setIncludeSubmissions(event.target.checked)} />
-          Also include people who submitted a form
-        </label>
+        <div className="audience-row">
+          <button type="button" className={!includeSubmissions ? "active" : ""} onClick={() => setIncludeSubmissions(false)}>
+            <strong>{subscribers.length}</strong>
+            <span>Subscribers</span>
+          </button>
+          <button type="button" className={includeSubmissions ? "active" : ""} onClick={() => setIncludeSubmissions(true)}>
+            <strong>{combinedCount}</strong>
+            <span>Subscribers and form emails</span>
+          </button>
+        </div>
         <label className="check-line">
           <input type="checkbox" checked={confirm} onChange={(event) => setConfirm(event.target.checked)} />
-          Send this email to {audience} {audience === 1 ? "person" : "people"}
+          Send this letter to {audience} {audience === 1 ? "person" : "people"}
         </label>
         <button className="btn btn-primary" type="submit" disabled={pending || !emailReady || audience === 0}>
-          {pending ? "Sending…" : "Send bulk email"} <span aria-hidden="true">→</span>
+          {pending ? "Sending…" : "Send bulk email"}
         </button>
         {!emailReady ? <small>Add RESEND_API_KEY and RESEND_FROM to enable sending.</small> : null}
       </form>
-      <div className="admin-stack">
+      <div className="mail-stage">
+        <p className="eyebrow">Preview</p>
+        <article className="mail-letter">
+          <header>
+            <span>Get updates from WIPI</span>
+            <h3>{subject.trim() || title}</h3>
+          </header>
+          <div>
+            {(message.trim() ? message : "Your update will appear here.").split(/\n{2,}/).map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
+          <p className="mail-signoff">Women in Politics Initiative · Plateau State</p>
+        </article>
         <h2>Subscribers</h2>
         {subscribers.length === 0 ? <p>Addresses appear here after someone joins from the footer.</p> : null}
         <ul className="email-list">

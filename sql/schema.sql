@@ -45,11 +45,14 @@ create table if not exists submissions (
   status text not null default 'new' check (status in ('new', 'reviewed')),
   data jsonb not null default '{}'::jsonb,
   payment_screenshot text,
+  payment_confirmed boolean not null default false,
   created_at timestamptz not null default now()
 );
 
 create index if not exists submissions_created_at_idx on submissions (created_at desc);
 create index if not exists submissions_type_idx on submissions (type);
+
+alter table submissions add column if not exists payment_confirmed boolean not null default false;
 
 create table if not exists subscribers (
   id uuid primary key,

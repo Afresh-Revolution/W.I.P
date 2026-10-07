@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { faqs, journey, leaders, legal, objectives, programmes, promises, slugify, stories, tiers, uniforms } from "@/lib/data";
+import type { BankDetails } from "@/lib/site-types";
+import { isRasterImage } from "@/lib/images";
 import { liveCopy } from "@/lib/copy";
 import { sendSubmission } from "./send-submission";
 import { useMedia, useSiteContent } from "./SiteContent";
@@ -707,6 +709,59 @@ export function UniformView() {
 const steps = ["Personal information", "Location", "Education", "Civic participation", "Membership", "Confirmation"];
 const education = ["No formal education", "Primary", "SSCE", "NCE", "Diploma", "HND", "Bachelor's degree", "Master's degree", "Doctorate", "Professional qualification", "Other"];
 
+function BankCard({ bank, children }: { bank: BankDetails; children?: ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="bank-card">
+      <header>
+        <span>Membership payment</span>
+        <h3>Pay by transfer</h3>
+      </header>
+      <p className="bank-note">{bank.instructions}</p>
+      <dl>
+        <div>
+          <dt>Bank</dt>
+          <dd>{bank.bankName}</dd>
+        </div>
+        <div>
+          <dt>Account name</dt>
+          <dd>{bank.accountName}</dd>
+        </div>
+        <div className="account-line">
+          <dt>Account number</dt>
+          <dd>
+            <strong>{bank.accountNumber}</strong>
+            <button
+              type="button"
+              onClick={async () => {
+                const value = bank.accountNumber.replace(/\s/g, "");
+                try {
+                  await navigator.clipboard.writeText(value);
+                } catch {
+                  const field = document.createElement("textarea");
+                  field.value = value;
+                  field.setAttribute("readonly", "");
+                  field.style.position = "fixed";
+                  field.style.left = "-9999px";
+                  document.body.append(field);
+                  field.select();
+                  document.execCommand("copy");
+                  field.remove();
+                }
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 1600);
+              }}
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </dd>
+        </div>
+      </dl>
+      {children}
+    </div>
+  );
+}
+
 export function JoinView() {
   const { lgas, bank } = useSiteContent();
   const [step, setStep] = useState(1);
@@ -732,7 +787,11 @@ export function JoinView() {
       return;
     }
     if (paid && bank.accountNumber && !shot) {
-      setError("Upload a screenshot of your transfer so the team can confirm it.");
+      setError("After you pay, upload a screenshot of the transfer, then submit.");
+      return;
+    }
+    if (shot && !isRasterImage(shot)) {
+      setError("Upload an image of your transfer. Any image format is accepted.");
       return;
     }
     setPending(true);
@@ -750,7 +809,7 @@ export function JoinView() {
   if (done) {
     return (
       <main className="success-page">
-        <Success note="Your registration is with the WIPI team. If you uploaded a payment screenshot, they will confirm it." />
+        <Success note={shot ? "Your registration is with the WIPI team. They will confirm the payment screenshot you submitted." : "Your registration is with the WIPI team."} />
         <div className="button-row">
           <ButtonLink href="/">Return home</ButtonLink>
           <ButtonLink href="/programmes" variant="secondary">
@@ -847,11 +906,18 @@ export function JoinView() {
             {step === 5 ? (
               <>
                 <h2>Choose your membership</h2>
-                <p>Paid categories are confirmed by bank transfer. Community membership is free.</p>
+                <p>Paid categories are confirmed by bank transfer. The account details appear once you choose one.</p>
                 <div className="join-tiers">
                   {[["Bronze", "₦2,000"], ["Silver", "₦5,000"], ["Gold", "₦10,000"], ["Community", "Free"]].map((item, index) => (
                     <label key={item[0]} className={index === 2 ? "suggested" : ""}>
-                      <input type="radio" name="tier" value={item[0]} defaultChecked={values.tier ? values.tier === item[0] : index === 2} required />
+                      <input
+                        type="radio"
+                        name="tier"
+                        value={item[0]}
+                        defaultChecked={values.tier === item[0]}
+                        onChange={() => setValues((current) => ({ ...current, tier: item[0] }))}
+                        required
+                      />
                       <span>
                         {index === 2 ? <small>Suggested</small> : null}
                         <b>{item[0]}</b>
@@ -860,6 +926,12 @@ export function JoinView() {
                     </label>
                   ))}
                 </div>
+                {paid && bank.accountNumber ? (
+                  <BankCard bank={bank}>
+                    <p className="bank-next">After you pay, continue and upload a screenshot of the transfer with your registration.</p>
+                  </BankCard>
+                ) : null}
+                {paid && !bank.accountNumber ? <p>Bank details are not published yet. You can still submit, and the membership team will contact you about payment.</p> : null}
               </>
             ) : null}
             {step === 6 ? (
@@ -879,31 +951,28 @@ export function JoinView() {
                   </p>
                 </div>
                 {paid && bank.accountNumber ? (
-                  <div className="bank-card">
-                    <h3>Pay by transfer</h3>
-                    <p>{bank.instructions}</p>
-                    <p>
-                      <span>Bank</span> {bank.bankName}
-                    </p>
-                    <p>
-                      <span>Account name</span> {bank.accountName}
-                    </p>
-                    <p>
-                      <span>Account number</span> <strong>{bank.accountNumber}</strong>
-                      <button
-                        className="btn btn-text"
-                        type="button"
-                        onClick={() => navigator.clipboard.writeText(bank.accountNumber)}
-                      >
-                        Copy
-                      </button>
-                    </p>
+                  <BankCard bank={bank}>
                     <label className="field">
                       <span>Payment screenshot</span>
-                      <input accept="image/jpeg,image/png,image/webp,image/gif" type="file" onChange={(event) => setShot(event.target.files?.[0] || null)} />
+                      <input
+                        className="payment-shot"
+                        accept="image/*,.heic,.heif,.bmp,.tif,.tiff,.avif"
+                        type="file"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] || null;
+                          if (file && !isRasterImage(file)) {
+                            setShot(null);
+                            setError("Upload an image of your transfer. Any image format is accepted.");
+                            event.target.value = "";
+                            return;
+                          }
+                          setError("");
+                          setShot(file);
+                        }}
+                      />
                     </label>
-                    {shot ? <small>{shot.name}</small> : null}
-                  </div>
+                    {shot ? <small>{shot.name}</small> : <small>JPG, PNG, HEIC, WEBP and other image formats are accepted.</small>}
+                  </BankCard>
                 ) : null}
                 {paid && !bank.accountNumber ? <p>Bank details are not published yet. You can still submit, and the membership team will contact you about payment.</p> : null}
                 {["I confirm the information provided is correct.", "I agree to WIPI’s membership guidelines.", "I understand that membership does not guarantee access to grants or political positions."].map((item) => (

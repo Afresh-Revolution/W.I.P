@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { isRasterImage } from "./images";
 
 const localDir = path.join(process.cwd(), "data", "cms");
 const uploadDir = path.join(process.cwd(), "public", "uploads");
@@ -90,9 +91,15 @@ export function updateDoc<T>(name: string, updater: (current: T | null) => T) {
   });
 }
 
-export async function saveImage(file: File) {
-  if (!allowedTypes.has(file.type)) throw new Error("Upload a JPG, PNG, WEBP or GIF image.");
-  if (file.size > 5 * 1024 * 1024) throw new Error("Images must be 5MB or smaller.");
+export async function saveImage(file: File, options?: { anyImage?: boolean }) {
+  if (options?.anyImage) {
+    if (!isRasterImage(file)) throw new Error("Upload an image of your transfer.");
+    if (file.size > 12 * 1024 * 1024) throw new Error("Images must be 12MB or smaller.");
+  } else if (!allowedTypes.has(file.type)) {
+    throw new Error("Upload a JPG, PNG, WEBP or GIF image.");
+  } else if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Images must be 5MB or smaller.");
+  }
   const bytes = Buffer.from(await file.arrayBuffer());
   const safe = (file.name || "image").toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "image";
   if (imagesConfigured()) {

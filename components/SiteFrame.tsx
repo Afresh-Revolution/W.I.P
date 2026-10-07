@@ -12,13 +12,18 @@ export function SiteFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [search, setSearch] = useState(false);
   const standalone = pathname === "/join" || pathname.startsWith("/admin");
+  const admin = pathname.startsWith("/admin");
 
   return (
     <>
       {!standalone ? <Header onSearch={() => setSearch(true)} /> : null}
-      <div className="page-transition" key={pathname}>
-        <Reveal>{children}</Reveal>
-      </div>
+      {admin ? (
+        children
+      ) : (
+        <div className="page-transition" key={pathname}>
+          <Reveal>{children}</Reveal>
+        </div>
+      )}
       {!standalone ? <Footer /> : null}
       {!standalone ? (
         <Link className="mobile-sticky" href="/join">
